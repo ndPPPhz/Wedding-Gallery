@@ -7,7 +7,7 @@
   --accent-dark: #8f6a48;
   --border: #ece4da;
   --grid-gap: 4px;
-  --unit: 110px;
+  --row-height: 140px;
   --mobile-bar-height: 60px;
 }
 
@@ -116,11 +116,44 @@ html, body {
   color: var(--muted);
 }
 
+.hero {
+  position: relative;
+  width: 100%;
+  height: 34vh;
+  min-height: 200px;
+  max-height: 380px;
+  overflow: hidden;
+}
+
+.hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.5));
+}
+
+.hero-overlay h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
 .grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--unit), 1fr));
-  grid-auto-rows: var(--unit);
-  grid-auto-flow: dense;
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--grid-gap);
   padding: var(--grid-gap);
 }
@@ -130,11 +163,7 @@ html, body {
   overflow: hidden;
   cursor: pointer;
   background: var(--border);
-}
-
-.tile.featured {
-  grid-column: span 2;
-  grid-row: span 2;
+  height: var(--row-height);
 }
 
 .tile img {
@@ -339,7 +368,7 @@ html, body {
 }
 
 @media (min-width: 700px) {
-  :root { --unit: 160px; }
+  :root { --row-height: 220px; }
 }
 
 .admin-login {
@@ -394,6 +423,11 @@ html, body {
   background: var(--surface);
 }
 
+.admin-card.is-cover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
 .admin-card img {
   width: 100%;
   height: 120px;
@@ -422,6 +456,10 @@ html, body {
   padding: 8px;
   font-size: 0.8rem;
   cursor: pointer;
+}
+
+.admin-card .cover-btn {
+  background: var(--accent);
 }
 
 /* Su schermi stretti (telefoni) il pulsante di upload diventa una barra

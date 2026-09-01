@@ -22,6 +22,11 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_photos_created_at ON photos(created_at);
   CREATE INDEX IF NOT EXISTS idx_photos_author ON photos(author);
+
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
+  );
 `);
 
 module.exports = db;

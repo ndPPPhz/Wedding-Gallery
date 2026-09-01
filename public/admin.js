@@ -32,7 +32,7 @@
     loadPhotos();
   }
 
-  function renderGrid(photos, password) {
+  function renderGrid(photos, password, coverId) {
     adminGrid.innerHTML = '';
     adminEmpty.hidden = photos.length > 0;
     adminGrid.hidden = photos.length === 0;
@@ -42,8 +42,10 @@
     adminSummary.textContent = `${photos.length} foto · ${formatBytes(totalBytes)} totali (versioni compresse)`;
 
     for (const photo of photos) {
+      const isCover = photo.id === coverId;
+
       const card = document.createElement('div');
-      card.className = 'admin-card';
+      card.className = 'admin-card' + (isCover ? ' is-cover' : '');
 
       const img = document.createElement('img');
       img.src = photo.thumbUrl;
@@ -53,6 +55,13 @@
       const info = document.createElement('div');
       info.className = 'admin-card-info';
       info.textContent = `${photo.author} · ${new Date(photo.createdAt).toLocaleString('it-IT')} · ${formatBytes(photo.sizeBytes)}`;
+      if (isCover) info.textContent += ' · Copertina attuale';
+
+      const coverBtn = document.createElement('button');
+      coverBtn.type = 'button';
+      coverBtn.className = 'cover-btn';
+      coverBtn.textContent = isCover ? 'Rimuovi copertina' : 'Imposta come copertina';
+      coverBtn.addEventListener('click', () => setCover(isCover ? null : photo.id, password));
 
       const deleteBtn = document.createElement('button');
       deleteBtn.type = 'button';
@@ -61,6 +70,7 @@
 
       card.appendChild(img);
       card.appendChild(info);
+      card.appendChild(coverBtn);
       card.appendChild(deleteBtn);
       adminGrid.appendChild(card);
     }
@@ -68,9 +78,23 @@
 
   async function loadPhotos() {
     const password = getPassword();
-    const res = await fetch('/api/photos?sort=desc');
-    const data = await res.json();
-    renderGrid(data.photos, password);
+    const [photosRes, configRes] = await Promise.all([
+      fetch('/api/photos?sort=desc'),
+      fetch('/api/config'),
+    ]);
+    const photosData = await photosRes.json();
+    const configData = await configRes.json();
+    const coverId = configData.coverPhoto ? configData.coverPhoto.id : null;
+    renderGrid(photosData.photos, password, coverId);
+  }
+
+  function handleAuthFailure(res) {
+    if (res.status === 401) {
+      sessionStorage.removeItem(PW_KEY);
+      showLogin('Password non più valida, reinseriscila.');
+      return true;
+    }
+    return false;
   }
 
   async function deletePhoto(id, password) {
@@ -81,13 +105,24 @@
       headers: { 'x-admin-password': password },
     });
 
-    if (res.status === 401) {
-      sessionStorage.removeItem(PW_KEY);
-      showLogin('Password non più valida, reinseriscila.');
-      return;
-    }
+    if (handleAuthFailure(res)) return;
     if (!res.ok) {
       alert('Errore durante l\'eliminazione della foto.');
+      return;
+    }
+    loadPhotos();
+  }
+
+  async function setCover(photoId, password) {
+    const res = await fetch('/api/admin/cover', {
+      method: 'POST',
+      headers: { 'x-admin-password': password, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ photoId }),
+    });
+
+    if (handleAuthFailure(res)) return;
+    if (!res.ok) {
+      alert('Errore durante l\'impostazione della copertina.');
       return;
     }
     loadPhotos();

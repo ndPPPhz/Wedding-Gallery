@@ -11,6 +11,9 @@
 
   const grid = document.getElementById('grid');
   const emptyState = document.getElementById('emptyState');
+  const hero = document.getElementById('hero');
+  const heroImg = document.getElementById('heroImg');
+  const heroTitle = document.getElementById('heroTitle');
   const menuToggle = document.getElementById('menuToggle');
   const filtersPanel = document.getElementById('filtersPanel');
   const filtersOverlay = document.getElementById('filtersOverlay');
@@ -39,18 +42,6 @@
     localStorage.setItem(NAME_KEY, name);
   }
 
-  function hashString(str) {
-    let h = 0;
-    for (let i = 0; i < str.length; i++) {
-      h = (h * 31 + str.charCodeAt(i)) | 0;
-    }
-    return Math.abs(h);
-  }
-
-  function isFeatured(photo) {
-    return hashString(photo.id) % 7 === 0;
-  }
-
   function formatDate(iso) {
     const d = new Date(iso);
     return d.toLocaleString('it-IT', {
@@ -66,7 +57,15 @@
       const res = await fetch('/api/config');
       const data = await res.json();
       if (data.title) document.getElementById('galleryTitle').textContent = data.title;
-    } catch (e) { /* usa titolo di default */ }
+
+      if (data.coverPhoto) {
+        heroImg.src = data.coverPhoto.fullUrl;
+        heroTitle.textContent = data.title || '';
+        hero.hidden = false;
+      } else {
+        hero.hidden = true;
+      }
+    } catch (e) { /* usa titolo di default, niente hero */ }
   }
 
   async function loadAuthors() {
@@ -96,17 +95,23 @@
     emptyState.hidden = photos.length > 0;
 
     photos.forEach((photo, index) => {
+      const aspectRatio = photo.width && photo.height ? photo.width / photo.height : 1;
+
       const tile = document.createElement('div');
-      tile.className = 'tile' + (isFeatured(photo) ? ' featured' : '');
+      tile.className = 'tile';
       tile.dataset.index = String(index);
+      // Righe "giustificate" in stile Google Photos: ogni riquadro tenta di
+      // occupare la larghezza proporzionale alla sua foto (flex-basis), poi
+      // flex-grow (pesato sull'aspect ratio) distribuisce lo spazio libero
+      // di ogni riga così che il bordo destro combaci, senza tagli forzati
+      // a un quadrato fisso.
+      tile.style.flexGrow = aspectRatio;
+      tile.style.flexBasis = `${aspectRatio * 140}px`;
 
       const img = document.createElement('img');
       img.src = photo.thumbUrl;
       img.loading = 'lazy';
       img.alt = `Foto di ${photo.author}`;
-      if (photo.width && photo.height) {
-        img.style.aspectRatio = `${photo.width} / ${photo.height}`;
-      }
 
       const caption = document.createElement('div');
       caption.className = 'tile-caption';
