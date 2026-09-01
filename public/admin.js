@@ -7,6 +7,13 @@
   const loginError = document.getElementById('loginError');
   const adminGrid = document.getElementById('adminGrid');
   const adminEmpty = document.getElementById('adminEmpty');
+  const adminSummary = document.getElementById('adminSummary');
+
+  function formatBytes(bytes) {
+    if (!bytes) return '0 KB';
+    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
 
   function getPassword() {
     return sessionStorage.getItem(PW_KEY) || '';
@@ -30,6 +37,10 @@
     adminEmpty.hidden = photos.length > 0;
     adminGrid.hidden = photos.length === 0;
 
+    const totalBytes = photos.reduce((sum, p) => sum + (p.sizeBytes || 0), 0);
+    adminSummary.hidden = photos.length === 0;
+    adminSummary.textContent = `${photos.length} foto · ${formatBytes(totalBytes)} totali (versioni compresse)`;
+
     for (const photo of photos) {
       const card = document.createElement('div');
       card.className = 'admin-card';
@@ -41,7 +52,7 @@
 
       const info = document.createElement('div');
       info.className = 'admin-card-info';
-      info.textContent = `${photo.author} · ${new Date(photo.createdAt).toLocaleString('it-IT')}`;
+      info.textContent = `${photo.author} · ${new Date(photo.createdAt).toLocaleString('it-IT')} · ${formatBytes(photo.sizeBytes)}`;
 
       const deleteBtn = document.createElement('button');
       deleteBtn.type = 'button';

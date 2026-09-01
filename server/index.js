@@ -41,6 +41,7 @@ function toPhotoJSON(row) {
     fullUrl: `/uploads/${row.full_file}`,
     width: row.width,
     height: row.height,
+    sizeBytes: row.size_bytes,
     createdAt: row.created_at,
   };
 }
@@ -126,6 +127,7 @@ app.post('/api/photos', upload.array('photos', MAX_FILES_PER_UPLOAD), async (req
           full_file: fullFile,
           width,
           height,
+          size_bytes: sizeBytes,
           created_at: createdAt,
         }),
       );
