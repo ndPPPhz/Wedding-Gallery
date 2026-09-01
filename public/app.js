@@ -138,7 +138,7 @@
   function openLightbox(index) {
     state.lightboxIndex = index;
     showLightboxPhoto();
-    lightbox.hidden = false;
+    lightbox.classList.add('open');
   }
 
   function showLightboxPhoto() {
@@ -152,8 +152,7 @@
   }
 
   function closeLightbox() {
-    lightbox.hidden = true;
-    lightboxImg.src = '';
+    lightbox.classList.remove('open');
     refresh();
   }
 
@@ -262,7 +261,7 @@
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !filtersPanel.hidden) setMenuOpen(false);
-    if (lightbox.hidden) return;
+    if (!lightbox.classList.contains('open')) return;
     if (e.key === 'Escape') closeLightbox();
     if (e.key === 'ArrowLeft') stepLightbox(-1);
     if (e.key === 'ArrowRight') stepLightbox(1);
@@ -287,7 +286,7 @@
       // Non aggiornare la griglia sotto i piedi di chi sta guardando una
       // foto a schermo intero: l'indice del lightbox si riferisce alla
       // lista attuale e andrebbe fuori sincrono con una nuova lista.
-      if (lightbox.hidden) refresh();
+      if (!lightbox.classList.contains('open')) refresh();
     }, POLL_INTERVAL_MS);
   });
 })();

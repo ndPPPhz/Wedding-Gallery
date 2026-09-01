@@ -3,8 +3,8 @@
   --surface: #ffffff;
   --text: #2b2320;
   --muted: #8a7c72;
-  --accent: #b8895f;
-  --accent-dark: #8f6a48;
+  --accent: #6e85a6;
+  --accent-dark: #56698a;
   --border: #ece4da;
   --grid-gap: 4px;
   --row-height: 140px;
@@ -308,12 +308,35 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.lightbox.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .lightbox img {
   max-width: 92vw;
   max-height: 82vh;
   object-fit: contain;
+  transform: scale(0.92);
+  transition: transform 0.25s ease;
+}
+
+.lightbox.open img {
+  transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lightbox,
+  .lightbox img {
+    transition: none;
+  }
 }
 
 .lightbox-close {
