@@ -115,7 +115,7 @@
 
       const caption = document.createElement('div');
       caption.className = 'tile-caption';
-      caption.textContent = `${photo.author} · ${formatDate(photo.createdAt)}`;
+      caption.textContent = photo.author;
 
       tile.appendChild(img);
       tile.appendChild(caption);
