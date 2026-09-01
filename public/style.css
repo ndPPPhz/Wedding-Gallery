@@ -12,6 +12,11 @@
 
 * { box-sizing: border-box; }
 
+/* Alcune regole qui sotto impostano `display` sulle stesse classi usate da
+   elementi con l'attributo [hidden] (modale, lightbox, banner): senza questa
+   regola, quel `display` vince sempre sullo stile di default di [hidden]. */
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0;
   padding: 0;
