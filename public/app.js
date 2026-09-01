@@ -11,6 +11,9 @@
 
   const grid = document.getElementById('grid');
   const emptyState = document.getElementById('emptyState');
+  const menuToggle = document.getElementById('menuToggle');
+  const filtersPanel = document.getElementById('filtersPanel');
+  const filtersOverlay = document.getElementById('filtersOverlay');
   const authorFilter = document.getElementById('authorFilter');
   const sortToggle = document.getElementById('sortToggle');
   const sortLabel = document.getElementById('sortLabel');
@@ -227,6 +230,18 @@
   }
 
   // Eventi UI
+  function setMenuOpen(open) {
+    filtersPanel.hidden = !open;
+    filtersOverlay.hidden = !open;
+    menuToggle.setAttribute('aria-expanded', String(open));
+  }
+
+  menuToggle.addEventListener('click', () => {
+    setMenuOpen(filtersPanel.hidden);
+  });
+
+  filtersOverlay.addEventListener('click', () => setMenuOpen(false));
+
   authorFilter.addEventListener('change', () => {
     state.author = authorFilter.value;
     refresh();
@@ -234,7 +249,7 @@
 
   sortToggle.addEventListener('click', () => {
     state.sort = state.sort === 'desc' ? 'asc' : 'desc';
-    sortLabel.textContent = state.sort === 'desc' ? 'Più recenti' : 'Meno recenti';
+    sortLabel.textContent = state.sort === 'desc' ? 'Più recenti prima' : 'Meno recenti prima';
     refresh();
   });
 
@@ -254,6 +269,7 @@
   lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
 
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !filtersPanel.hidden) setMenuOpen(false);
     if (lightbox.hidden) return;
     if (e.key === 'Escape') closeLightbox();
     if (e.key === 'ArrowLeft') stepLightbox(-1);

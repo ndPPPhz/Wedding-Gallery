@@ -10,16 +10,29 @@
 
 <header class="topbar">
   <h1 id="galleryTitle">Galleria</h1>
-  <div class="controls">
+  <button id="menuToggle" class="icon-btn menu-toggle" type="button" aria-expanded="false" aria-controls="filtersPanel">
+    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 6h18v2H3zM3 11h18v2H3zM3 16h18v2H3z"/></svg>
+    <span>Filtri</span>
+  </button>
+</header>
+
+<div id="filtersPanel" class="filters-panel" hidden>
+  <label class="filter-row">
+    <span class="filter-label">Filtra per invitato</span>
     <select id="authorFilter" aria-label="Filtra per autore">
       <option value="">Tutti gli invitati</option>
     </select>
-    <button id="sortToggle" class="icon-btn" type="button" title="Ordina">
-      <span id="sortLabel">Più recenti</span>
+  </label>
+  <label class="filter-row">
+    <span class="filter-label">Ordina per data</span>
+    <button id="sortToggle" class="icon-btn" type="button">
+      <span id="sortLabel">Più recenti prima</span>
       <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
     </button>
-  </div>
-</header>
+  </label>
+</div>
+
+<div id="filtersOverlay" class="filters-overlay" hidden></div>
 
 <div id="newPhotosBanner" class="new-photos-banner" hidden>
   <button type="button" id="newPhotosBtn">Nuove foto disponibili · tocca per aggiornare</button>
@@ -29,8 +42,9 @@
 
 <p id="emptyState" class="empty-state" hidden>Nessuna foto ancora. Sii il primo a caricarne una! 📸</p>
 
-<label id="uploadFab" class="fab" for="fileInput" title="Carica foto">
-  <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M12 4l-6 6h4v6h4v-6h4z"/></svg>
+<label id="uploadFab" class="fab" for="fileInput">
+  <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 4l-6 6h4v6h4v-6h4z"/></svg>
+  <span>Carica foto</span>
   <input id="fileInput" type="file" accept="image/*,.heic,.heif" multiple hidden />
 </label>
 
