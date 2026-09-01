@@ -39,10 +39,19 @@ Apri `http://localhost:3000`.
 | `PORT`                 | Porta di ascolto del server                       | `3000`                |
 | `UPLOAD_DIR`           | Cartella dove salvare le foto compresse           | `./data/uploads`      |
 | `DB_PATH`              | Percorso del database SQLite                      | `./data/gallery.db`   |
-| `MAX_FILE_MB`          | Dimensione massima per singola foto originale     | `25`                  |
+| `MAX_FILE_MB`          | Dimensione massima per singola foto originale     | `100`                 |
 | `MAX_FILES_PER_UPLOAD` | Numero massimo di foto per singolo upload         | `20`                  |
 | `GALLERY_TITLE`        | Titolo mostrato in alto nella pagina              | `Il Nostro Matrimonio`|
 | `ADMIN_PASSWORD`       | Password per `/admin`. Vuota = zona admin disabilitata | _(vuota)_        |
+
+Il limite di dimensione dei file esiste in **due punti separati**: `MAX_FILE_MB`
+qui (controllato dall'app) e `client_max_body_size` in nginx (vedi
+`deploy/nginx.conf.example`), che blocca le richieste troppo grandi
+*prima* che arrivino all'app. Se alzi `MAX_FILE_MB`, controlla anche di
+alzare `client_max_body_size` nella configurazione nginx del tuo dominio,
+altrimenti l'upload verrà comunque rifiutato da nginx con un errore 413.
+La compressione avviene solo *dopo* che il file ha superato entrambi questi
+controlli, quindi da sola non basta a evitare il blocco.
 
 ## Zona admin
 
