@@ -8,6 +8,7 @@
   --border: #ece4da;
   --grid-gap: 4px;
   --unit: 110px;
+  --mobile-bar-height: 60px;
 }
 
 * { box-sizing: border-box; }
@@ -421,4 +422,29 @@ html, body {
   padding: 8px;
   font-size: 0.8rem;
   cursor: pointer;
+}
+
+/* Su schermi stretti (telefoni) il pulsante di upload diventa una barra
+   intera attaccata al fondo, invece di una pillola fluttuante — più facile
+   da individuare e da toccare con il pollice. */
+@media (max-width: 699px) {
+  body {
+    padding-bottom: calc(var(--mobile-bar-height) + env(safe-area-inset-bottom));
+  }
+
+  .fab {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: calc(var(--mobile-bar-height) + env(safe-area-inset-bottom));
+    padding: 0 20px env(safe-area-inset-bottom);
+    border-radius: 0;
+    justify-content: center;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
+  }
+
+  .upload-progress {
+    bottom: calc(var(--mobile-bar-height) + env(safe-area-inset-bottom) + 12px);
+  }
 }
