@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Galleria del Matrimonio</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <h1 id="galleryTitle">Galleria</h1>
+  <div class="controls">
+    <select id="authorFilter" aria-label="Filtra per autore">
+      <option value="">Tutti gli invitati</option>
+    </select>
+    <button id="sortToggle" class="icon-btn" type="button" title="Ordina">
+      <span id="sortLabel">Più recenti</span>
+      <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div id="newPhotosBanner" class="new-photos-banner" hidden>
+  <button type="button" id="newPhotosBtn">Nuove foto disponibili · tocca per aggiornare</button>
+</div>
+
+<main id="grid" class="grid" aria-live="polite"></main>
+
+<p id="emptyState" class="empty-state" hidden>Nessuna foto ancora. Sii il primo a caricarne una! 📸</p>
+
+<label id="uploadFab" class="fab" for="fileInput" title="Carica foto">
+  <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M12 4l-6 6h4v6h4v-6h4z"/></svg>
+  <input id="fileInput" type="file" accept="image/*,.heic,.heif" multiple hidden />
+</label>
+
+<div id="uploadProgress" class="upload-progress" hidden>
+  <div class="upload-progress-bar"><div id="uploadProgressFill"></div></div>
+  <span id="uploadProgressText">Caricamento…</span>
+</div>
+
+<!-- Modale nome invitato -->
+<div id="nameModal" class="modal-overlay" hidden>
+  <div class="modal">
+    <h2>Benvenuto! 💍</h2>
+    <p>Come ti chiami? Il tuo nome verrà mostrato accanto alle foto che carichi.</p>
+    <form id="nameForm">
+      <input id="nameInput" type="text" maxlength="60" placeholder="Es. Mario Rossi" required autofocus />
+      <button type="submit">Continua</button>
+    </form>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div id="lightbox" class="lightbox" hidden>
+  <button class="lightbox-close" id="lightboxClose" aria-label="Chiudi">✕</button>
+  <button class="lightbox-nav lightbox-prev" id="lightboxPrev" aria-label="Precedente">‹</button>
+  <img id="lightboxImg" src="" alt="" />
+  <button class="lightbox-nav lightbox-next" id="lightboxNext" aria-label="Successiva">›</button>
+  <div class="lightbox-caption">
+    <span id="lightboxAuthor"></span>
+    <span id="lightboxDate"></span>
+    <a id="lightboxDownload" download title="Scarica">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M5 20h14v-2H5v2zM12 4v10.17l3.59-3.58L17 12l-5 5-5-5 1.41-1.41L12 14.17V4z"/></svg>
+    </a>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

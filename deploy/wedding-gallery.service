@@ -1,0 +1,20 @@
+[Unit]
+Description=Wedding Gallery
+After=network.target
+
+[Service]
+Type=simple
+User=wedding
+Group=wedding
+WorkingDirectory=/opt/wedding-gallery
+EnvironmentFile=/opt/wedding-gallery/.env
+ExecStart=/usr/bin/node server/index.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/wedding-gallery/data
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
