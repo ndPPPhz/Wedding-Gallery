@@ -17,8 +17,6 @@
   const authorFilter = document.getElementById('authorFilter');
   const sortToggle = document.getElementById('sortToggle');
   const sortLabel = document.getElementById('sortLabel');
-  const newPhotosBanner = document.getElementById('newPhotosBanner');
-  const newPhotosBtn = document.getElementById('newPhotosBtn');
   const fileInput = document.getElementById('fileInput');
   const uploadProgress = document.getElementById('uploadProgress');
   const uploadProgressFill = document.getElementById('uploadProgressFill');
@@ -121,22 +119,15 @@
     });
   }
 
-  async function refresh({ silent = false } = {}) {
+  function samePhotoList(a, b) {
+    return a.length === b.length && a.every((photo, i) => photo.id === b[i].id);
+  }
+
+  async function refresh() {
     const photos = await fetchPhotos();
-
-    if (silent && state.photos.length > 0) {
-      const knownIds = new Set(state.photos.map((p) => p.id));
-      const hasNew = photos.some((p) => !knownIds.has(p.id));
-      if (hasNew) {
-        newPhotosBanner.hidden = false;
-        return;
-      }
-      return;
-    }
-
+    if (samePhotoList(photos, state.photos)) return;
     state.photos = photos;
     renderGrid(photos);
-    newPhotosBanner.hidden = true;
   }
 
   function openLightbox(index) {
@@ -158,6 +149,7 @@
   function closeLightbox() {
     lightbox.hidden = true;
     lightboxImg.src = '';
+    refresh();
   }
 
   function stepLightbox(delta) {
@@ -253,11 +245,6 @@
     refresh();
   });
 
-  newPhotosBtn.addEventListener('click', () => {
-    refresh();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-
   fileInput.addEventListener('change', () => {
     if (fileInput.files.length === 0) return;
     ensureGuestName(() => uploadFiles(fileInput.files));
@@ -292,7 +279,10 @@
   refresh().then(() => {
     setInterval(() => {
       loadAuthors();
-      refresh({ silent: true });
+      // Non aggiornare la griglia sotto i piedi di chi sta guardando una
+      // foto a schermo intero: l'indice del lightbox si riferisce alla
+      // lista attuale e andrebbe fuori sincrono con una nuova lista.
+      if (lightbox.hidden) refresh();
     }, POLL_INTERVAL_MS);
   });
 })();
