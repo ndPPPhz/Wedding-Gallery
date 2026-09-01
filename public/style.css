@@ -185,14 +185,7 @@ html, body {
   background: linear-gradient(to top, rgba(0,0,0,0.55), transparent);
   color: #fff;
   font-size: 0.72rem;
-  opacity: 0;
-  transition: opacity 0.2s ease;
   pointer-events: none;
-}
-
-.tile:hover .tile-caption,
-.tile:active .tile-caption {
-  opacity: 1;
 }
 
 .empty-state {
