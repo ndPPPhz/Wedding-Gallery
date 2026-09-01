@@ -200,8 +200,9 @@ html, body {
 
 .fab {
   position: fixed;
-  right: 20px;
+  left: 50%;
   bottom: 24px;
+  transform: translateX(-50%);
   height: 52px;
   padding: 0 22px 0 18px;
   border-radius: 26px;
