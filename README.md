@@ -50,11 +50,10 @@ Apri `http://localhost:3000`.
    sudo pacman -S nodejs npm
    ```
 
-2. Crea un utente dedicato e copia il progetto:
+2. Crea un utente dedicato e clona il repository:
    ```bash
-   sudo useradd -r -s /usr/bin/nologin wedding
-   sudo mkdir -p /opt/wedding-gallery
-   sudo cp -r . /opt/wedding-gallery
+   sudo useradd -r -m -s /usr/bin/nologin wedding
+   sudo git clone https://github.com/ndPPPhz/Wedding-Gallery.git /opt/wedding-gallery
    cd /opt/wedding-gallery
    sudo npm install --omit=dev
    sudo cp .env.example .env
@@ -62,6 +61,11 @@ Apri `http://localhost:3000`.
    sudo mkdir -p data
    sudo chown -R wedding:wedding /opt/wedding-gallery
    ```
+
+   Se il repository è privato, clonalo via SSH invece che via HTTPS: genera
+   una chiave sul server (`sudo -u wedding ssh-keygen -t ed25519`), aggiungila
+   su GitHub in *Settings → SSH and GPG keys*, e usa
+   `git@github.com:ndPPPhz/Wedding-Gallery.git` come URL.
 
 3. Installa il servizio systemd:
    ```bash
@@ -81,9 +85,16 @@ Apri `http://localhost:3000`.
    sudo certbot --nginx -d gallery.tuodominio.it
    ```
 
-5. Aggiornare l'app dopo una modifica: sostituisci i file in
-   `/opt/wedding-gallery` (i dati restano in `data/`, che non viene toccato)
-   e riavvia con `sudo systemctl restart wedding-gallery`.
+5. Per aggiornare l'app dopo una modifica al repository, dal server:
+   ```bash
+   cd /opt/wedding-gallery
+   sudo -u wedding git pull origin main
+   sudo npm install --omit=dev   # solo se sono cambiate le dipendenze
+   sudo systemctl restart wedding-gallery
+   ```
+   La cartella `data/` (foto + database) è nel `.gitignore` e non viene mai
+   toccata da `git pull`, quindi i contenuti già caricati restano al sicuro
+   tra un aggiornamento e l'altro.
 
 ## Note
 
