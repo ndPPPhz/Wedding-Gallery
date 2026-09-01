@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin galleria</title>
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <h1>Admin galleria</h1>
+</header>
+
+<div id="loginBox" class="admin-login">
+  <p>Inserisci la password admin per gestire le foto.</p>
+  <form id="loginForm">
+    <input id="passwordInput" type="password" placeholder="Password" autofocus required />
+    <button type="submit">Entra</button>
+  </form>
+  <p id="loginError" class="admin-error" hidden></p>
+</div>
+
+<main id="adminGrid" class="admin-grid" hidden></main>
+<p id="adminEmpty" class="empty-state" hidden>Nessuna foto caricata.</p>
+
+<script src="/admin.js"></script>
+</body>
+</html>

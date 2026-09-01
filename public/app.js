@@ -290,6 +290,9 @@
   loadConfig();
   loadAuthors();
   refresh().then(() => {
-    setInterval(() => refresh({ silent: true }), POLL_INTERVAL_MS);
+    setInterval(() => {
+      loadAuthors();
+      refresh({ silent: true });
+    }, POLL_INTERVAL_MS);
   });
 })();
