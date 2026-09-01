@@ -115,26 +115,6 @@ html, body {
   color: var(--muted);
 }
 
-.new-photos-banner {
-  position: sticky;
-  top: 62px;
-  z-index: 19;
-  display: flex;
-  justify-content: center;
-  padding: 8px 0;
-}
-
-.new-photos-banner button {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 20px;
-  padding: 8px 16px;
-  font-size: 0.85rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  cursor: pointer;
-}
-
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--unit), 1fr));
