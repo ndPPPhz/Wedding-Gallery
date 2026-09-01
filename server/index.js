@@ -14,6 +14,7 @@ const UPLOAD_DIR = path.resolve(process.env.UPLOAD_DIR || path.join(__dirname, '
 const MAX_FILE_MB = Number(process.env.MAX_FILE_MB || 25);
 const MAX_FILES_PER_UPLOAD = Number(process.env.MAX_FILES_PER_UPLOAD || 20);
 const GALLERY_TITLE = process.env.GALLERY_TITLE || 'La Nostra Galleria';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
@@ -46,6 +47,18 @@ function toPhotoJSON(row) {
 
 function sanitizeAuthor(raw) {
   return String(raw || '').trim().slice(0, 60);
+}
+
+function requireAdmin(req, res, next) {
+  if (!ADMIN_PASSWORD) {
+    return res.status(503).json({ error: 'Zona admin non configurata: imposta ADMIN_PASSWORD nel .env.' });
+  }
+  const provided = Buffer.from(req.get('x-admin-password') || '');
+  const expected = Buffer.from(ADMIN_PASSWORD);
+  if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
+    return res.status(401).json({ error: 'Password non valida.' });
+  }
+  next();
 }
 
 app.get('/api/config', (req, res) => {
@@ -123,6 +136,28 @@ app.post('/api/photos', upload.array('photos', MAX_FILES_PER_UPLOAD), async (req
   }
 
   res.status(results.length > 0 ? 201 : 422).json({ photos: results, failed: errors });
+});
+
+app.get('/api/admin/check', requireAdmin, (req, res) => {
+  res.status(204).end();
+});
+
+app.delete('/api/photos/:id', requireAdmin, (req, res) => {
+  const row = db.prepare('SELECT * FROM photos WHERE id = ?').get(req.params.id);
+  if (!row) {
+    return res.status(404).json({ error: 'Foto non trovata.' });
+  }
+
+  for (const file of [row.thumb_file, row.full_file]) {
+    fs.rmSync(path.join(UPLOAD_DIR, file), { force: true });
+  }
+  db.prepare('DELETE FROM photos WHERE id = ?').run(req.params.id);
+
+  res.status(204).end();
+});
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
 });
 
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '30d', immutable: true }));

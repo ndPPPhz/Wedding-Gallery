@@ -42,6 +42,16 @@ Apri `http://localhost:3000`.
 | `MAX_FILE_MB`          | Dimensione massima per singola foto originale     | `25`                  |
 | `MAX_FILES_PER_UPLOAD` | Numero massimo di foto per singolo upload         | `20`                  |
 | `GALLERY_TITLE`        | Titolo mostrato in alto nella pagina              | `Il Nostro Matrimonio`|
+| `ADMIN_PASSWORD`       | Password per `/admin`. Vuota = zona admin disabilitata | _(vuota)_        |
+
+## Zona admin
+
+Su `/admin` (es. `https://gallery.tuodominio.it/admin`) trovi una pagina,
+non collegata dal resto del sito, per eliminare foto (utile per rimuovere
+foto di test o inadatte). Serve `ADMIN_PASSWORD` impostata nel `.env` —
+senza, la zona admin risponde "non configurata". La password viene
+richiesta una volta per sessione del browser (non resta salvata dopo aver
+chiuso la scheda).
 
 ## Deploy su Arch Linux (systemd)
 
