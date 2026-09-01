@@ -406,6 +406,12 @@ html, body {
   color: var(--muted);
 }
 
+.admin-summary {
+  padding: 12px 16px 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .admin-card button {
   display: block;
   width: 100%;
