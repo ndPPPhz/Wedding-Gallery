@@ -45,10 +45,14 @@ Apri `http://localhost:3000`.
 
 ## Deploy su Arch Linux (systemd)
 
-1. Installa Node.js:
+1. Installa Node.js e gli strumenti di build:
    ```bash
-   sudo pacman -S nodejs npm
+   sudo pacman -S --needed nodejs npm git base-devel python
    ```
+   `base-devel` e `python` servono perché `better-sqlite3` è un modulo
+   nativo: se il binario precompilato scaricato da npm non è compatibile
+   con il tuo sistema, questi strumenti permettono di ricompilarlo in
+   locale (vedi la sezione "Risoluzione problemi" più sotto).
 
 2. Crea un utente dedicato e clona il repository:
    ```bash
@@ -89,12 +93,27 @@ Apri `http://localhost:3000`.
    ```bash
    cd /opt/wedding-gallery
    sudo -u wedding git pull origin main
-   sudo npm install --omit=dev   # solo se sono cambiate le dipendenze
+   sudo -u wedding npm install --omit=dev   # solo se sono cambiate le dipendenze
    sudo systemctl restart wedding-gallery
    ```
    La cartella `data/` (foto + database) è nel `.gitignore` e non viene mai
    toccata da `git pull`, quindi i contenuti già caricati restano al sicuro
    tra un aggiornamento e l'altro.
+
+## Risoluzione problemi
+
+**Il servizio non parte, e nei log (`journalctl -u wedding-gallery`) vedi
+un errore di `better-sqlite3` che non trova il suo file `.node`:**
+il binario nativo precompilato scaricato durante `npm install` non è
+compatibile con il tuo sistema (succede più facilmente con versioni di
+Node.js molto recenti). Ricompilalo in locale — richiede `base-devel` e
+`python` installati (punto 1):
+```bash
+sudo pacman -S --needed base-devel python
+cd /opt/wedding-gallery
+sudo -u wedding npm rebuild better-sqlite3 --build-from-source
+sudo systemctl restart wedding-gallery
+```
 
 ## Note
 
