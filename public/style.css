@@ -200,19 +200,16 @@ html, body {
 
 .fab {
   position: fixed;
-  left: 50%;
+  right: 20px;
   bottom: 24px;
-  transform: translateX(-50%);
-  height: 52px;
-  padding: 0 22px 0 18px;
-  border-radius: 26px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
   background: var(--accent);
   color: #fff;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 1rem;
-  font-weight: 600;
+  justify-content: center;
   box-shadow: 0 4px 14px rgba(0,0,0,0.25);
   cursor: pointer;
   z-index: 25;
