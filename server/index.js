@@ -19,6 +19,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 const app = express();
+app.use(express.json());
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -50,6 +51,19 @@ function sanitizeAuthor(raw) {
   return String(raw || '').trim().slice(0, 60);
 }
 
+const getSettingStmt = db.prepare('SELECT value FROM settings WHERE key = ?');
+const setSettingStmt = db.prepare(
+  'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+);
+const deleteSettingStmt = db.prepare('DELETE FROM settings WHERE key = ?');
+
+function getCoverPhoto() {
+  const row = getSettingStmt.get('cover_photo_id');
+  if (!row) return null;
+  const photo = db.prepare('SELECT * FROM photos WHERE id = ?').get(row.value);
+  return photo ? toPhotoJSON(photo) : null;
+}
+
 function requireAdmin(req, res, next) {
   if (!ADMIN_PASSWORD) {
     return res.status(503).json({ error: 'Zona admin non configurata: imposta ADMIN_PASSWORD nel .env.' });
@@ -63,7 +77,7 @@ function requireAdmin(req, res, next) {
 }
 
 app.get('/api/config', (req, res) => {
-  res.json({ title: GALLERY_TITLE });
+  res.json({ title: GALLERY_TITLE, coverPhoto: getCoverPhoto() });
 });
 
 app.get('/api/authors', (req, res) => {
@@ -155,6 +169,27 @@ app.delete('/api/photos/:id', requireAdmin, (req, res) => {
   }
   db.prepare('DELETE FROM photos WHERE id = ?').run(req.params.id);
 
+  const coverRow = getSettingStmt.get('cover_photo_id');
+  if (coverRow && coverRow.value === req.params.id) {
+    deleteSettingStmt.run('cover_photo_id');
+  }
+
+  res.status(204).end();
+});
+
+app.post('/api/admin/cover', requireAdmin, (req, res) => {
+  const photoId = req.body && req.body.photoId;
+  if (!photoId) {
+    deleteSettingStmt.run('cover_photo_id');
+    return res.status(204).end();
+  }
+
+  const photo = db.prepare('SELECT id FROM photos WHERE id = ?').get(photoId);
+  if (!photo) {
+    return res.status(404).json({ error: 'Foto non trovata.' });
+  }
+
+  setSettingStmt.run('cover_photo_id', photoId);
   res.status(204).end();
 });
 
