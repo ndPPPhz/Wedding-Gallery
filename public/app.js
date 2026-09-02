@@ -19,8 +19,7 @@
   const filtersPanel = document.getElementById('filtersPanel');
   const filtersOverlay = document.getElementById('filtersOverlay');
   const authorFilter = document.getElementById('authorFilter');
-  const sortToggle = document.getElementById('sortToggle');
-  const sortLabel = document.getElementById('sortLabel');
+  const sortSelect = document.getElementById('sortSelect');
   const fileInput = document.getElementById('fileInput');
   const uploadProgress = document.getElementById('uploadProgress');
   const uploadProgressFill = document.getElementById('uploadProgressFill');
@@ -35,6 +34,12 @@
   const lightboxDate = document.getElementById('lightboxDate');
   const lightboxDownload = document.getElementById('lightboxDownload');
   const lightboxDelete = document.getElementById('lightboxDelete');
+  const lightboxLike = document.getElementById('lightboxLike');
+  const lightboxLikeCount = document.getElementById('lightboxLikeCount');
+  const heartPop = document.getElementById('heartPop');
+
+  const HEART_SVG =
+    '<svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
 
   function getGuestName() {
     return localStorage.getItem(NAME_KEY) || '';
@@ -129,13 +134,42 @@
 
       tile.appendChild(img);
       tile.appendChild(caption);
+      if (photo.likeCount > 0) {
+        tile.appendChild(buildLikeBadge(photo.likeCount));
+      }
       tile.addEventListener('click', () => openLightbox(index));
       grid.appendChild(tile);
     });
   }
 
+  function buildLikeBadge(count) {
+    const badge = document.createElement('div');
+    badge.className = 'tile-likes';
+    badge.innerHTML = `${HEART_SVG}<span>${count}</span>`;
+    return badge;
+  }
+
+  function updateTileLikeBadge(index) {
+    const photo = state.photos[index];
+    const tile = grid.children[index];
+    if (!photo || !tile) return;
+    const existing = tile.querySelector('.tile-likes');
+    if (photo.likeCount > 0) {
+      if (existing) {
+        existing.querySelector('span').textContent = photo.likeCount;
+      } else {
+        tile.appendChild(buildLikeBadge(photo.likeCount));
+      }
+    } else if (existing) {
+      existing.remove();
+    }
+  }
+
   function samePhotoList(a, b) {
-    return a.length === b.length && a.every((photo, i) => photo.id === b[i].id);
+    return (
+      a.length === b.length &&
+      a.every((photo, i) => photo.id === b[i].id && photo.likeCount === b[i].likeCount)
+    );
   }
 
   async function refresh() {
@@ -160,6 +194,46 @@
     lightboxDate.textContent = formatDate(photo.createdAt);
     lightboxDownload.href = photo.fullUrl;
     lightboxDelete.hidden = !photo.mine;
+    updateLightboxLikeUI(photo);
+  }
+
+  function updateLightboxLikeUI(photo) {
+    lightboxLikeCount.textContent = photo.likeCount;
+    lightboxLike.classList.toggle('liked', photo.likedByMe);
+  }
+
+  async function setLike(liked) {
+    const photo = state.photos[state.lightboxIndex];
+    if (!photo) return;
+    const res = await fetch(`/api/photos/${photo.id}/like`, {
+      method: liked ? 'POST' : 'DELETE',
+      headers: { 'x-guest-id': getGuestId() },
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    photo.likeCount = data.likeCount;
+    photo.likedByMe = data.likedByMe;
+    updateLightboxLikeUI(photo);
+    updateTileLikeBadge(state.lightboxIndex);
+  }
+
+  function toggleLike() {
+    const photo = state.photos[state.lightboxIndex];
+    if (!photo) return;
+    setLike(!photo.likedByMe);
+  }
+
+  function showHeartPop() {
+    heartPop.hidden = false;
+    heartPop.classList.remove('pop');
+    void heartPop.offsetWidth; // riavvia l'animazione anche se già in corso
+    heartPop.classList.add('pop');
+  }
+
+  function likeOnDoubleTap() {
+    showHeartPop();
+    const photo = state.photos[state.lightboxIndex];
+    if (photo && !photo.likedByMe) setLike(true);
   }
 
   async function deleteOwnPhoto() {
@@ -272,9 +346,8 @@
     refresh();
   });
 
-  sortToggle.addEventListener('click', () => {
-    state.sort = state.sort === 'desc' ? 'asc' : 'desc';
-    sortLabel.textContent = state.sort === 'desc' ? 'Più recenti prima' : 'Meno recenti prima';
+  sortSelect.addEventListener('change', () => {
+    state.sort = sortSelect.value;
     refresh();
   });
 
@@ -285,9 +358,26 @@
 
   document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
   lightboxDelete.addEventListener('click', deleteOwnPhoto);
+  lightboxLike.addEventListener('click', toggleLike);
   document.getElementById('lightboxPrev').addEventListener('click', () => stepLightbox(-1));
   document.getElementById('lightboxNext').addEventListener('click', () => stepLightbox(1));
   lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+  heartPop.addEventListener('animationend', () => {
+    heartPop.hidden = true;
+    heartPop.classList.remove('pop');
+  });
+
+  // Doppio tap/click sulla foto per mettere like, come Instagram
+  let lastImgTapTime = 0;
+  lightboxImg.addEventListener('click', () => {
+    const now = Date.now();
+    if (now - lastImgTapTime < 300) {
+      lastImgTapTime = 0;
+      likeOnDoubleTap();
+    } else {
+      lastImgTapTime = now;
+    }
+  });
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !filtersPanel.hidden) setMenuOpen(false);

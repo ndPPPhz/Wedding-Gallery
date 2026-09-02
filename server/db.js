@@ -27,6 +27,14 @@ db.exec(`
     key TEXT PRIMARY KEY,
     value TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS likes (
+    photo_id TEXT NOT NULL,
+    guest_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (photo_id, guest_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_likes_photo ON likes(photo_id);
 `);
 
 const photoColumns = db.prepare('PRAGMA table_info(photos)').all().map((c) => c.name);
