@@ -56,7 +56,6 @@
     try {
       const res = await fetch('/api/config');
       const data = await res.json();
-      if (data.title) document.getElementById('galleryTitle').textContent = data.title;
 
       if (data.coverPhoto) {
         heroImg.src = data.coverPhoto.fullUrl;
