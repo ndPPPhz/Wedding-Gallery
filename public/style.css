@@ -395,9 +395,11 @@ html, body {
   left: 0;
   right: 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 8px 14px;
+  padding: 0 12px;
   color: #fff;
   font-size: 0.85rem;
 }
