@@ -29,4 +29,9 @@ db.exec(`
   );
 `);
 
+const photoColumns = db.prepare('PRAGMA table_info(photos)').all().map((c) => c.name);
+if (!photoColumns.includes('guest_id')) {
+  db.exec('ALTER TABLE photos ADD COLUMN guest_id TEXT');
+}
+
 module.exports = db;

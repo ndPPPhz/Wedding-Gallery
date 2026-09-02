@@ -1,5 +1,6 @@
 (() => {
   const NAME_KEY = 'wg_guest_name';
+  const GUEST_ID_KEY = 'wg_guest_id';
   const POLL_INTERVAL_MS = 12000;
 
   const state = {
@@ -33,6 +34,7 @@
   const lightboxAuthor = document.getElementById('lightboxAuthor');
   const lightboxDate = document.getElementById('lightboxDate');
   const lightboxDownload = document.getElementById('lightboxDownload');
+  const lightboxDelete = document.getElementById('lightboxDelete');
 
   function getGuestName() {
     return localStorage.getItem(NAME_KEY) || '';
@@ -40,6 +42,15 @@
 
   function setGuestName(name) {
     localStorage.setItem(NAME_KEY, name);
+  }
+
+  function getGuestId() {
+    let id = localStorage.getItem(GUEST_ID_KEY);
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem(GUEST_ID_KEY, id);
+    }
+    return id;
   }
 
   function formatDate(iso) {
@@ -82,7 +93,7 @@
   }
 
   async function fetchPhotos() {
-    const params = new URLSearchParams({ sort: state.sort });
+    const params = new URLSearchParams({ sort: state.sort, guestId: getGuestId() });
     if (state.author) params.set('author', state.author);
     const res = await fetch(`/api/photos?${params}`);
     const data = await res.json();
@@ -148,6 +159,24 @@
     lightboxAuthor.textContent = photo.author;
     lightboxDate.textContent = formatDate(photo.createdAt);
     lightboxDownload.href = photo.fullUrl;
+    lightboxDelete.hidden = !photo.mine;
+  }
+
+  async function deleteOwnPhoto() {
+    const photo = state.photos[state.lightboxIndex];
+    if (!photo) return;
+    if (!confirm('Eliminare questa foto? Non si può annullare.')) return;
+
+    const res = await fetch(`/api/photos/${photo.id}`, {
+      method: 'DELETE',
+      headers: { 'x-guest-id': getGuestId() },
+    });
+
+    if (!res.ok) {
+      alert('Non è stato possibile eliminare la foto.');
+      return;
+    }
+    closeLightbox();
   }
 
   function closeLightbox() {
@@ -166,6 +195,7 @@
     const guestName = getGuestName();
     const form = new FormData();
     form.append('author', guestName);
+    form.append('guestId', getGuestId());
     for (const file of files) form.append('photos', file);
 
     uploadProgress.hidden = false;
@@ -254,6 +284,7 @@
   });
 
   document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+  lightboxDelete.addEventListener('click', deleteOwnPhoto);
   document.getElementById('lightboxPrev').addEventListener('click', () => stepLightbox(-1));
   document.getElementById('lightboxNext').addEventListener('click', () => stepLightbox(1));
   lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
