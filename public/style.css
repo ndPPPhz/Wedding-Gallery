@@ -51,7 +51,8 @@ html, body {
   text-overflow: ellipsis;
 }
 
-#authorFilter {
+#authorFilter,
+#sortSelect {
   border: 1px solid var(--border);
   background: var(--surface);
   border-radius: 20px;
@@ -90,12 +91,19 @@ html, body {
 }
 
 .filters-panel {
-  position: relative;
+  position: fixed;
+  left: 0;
+  right: 0;
+  /* top viene impostato via JS in base all'altezza reale dell'header,
+     così il pannello resta appena sotto la barra in alto qualunque sia
+     la posizione di scroll quando viene aperto. */
   z-index: 20;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   box-shadow: 0 6px 16px rgba(0,0,0,0.08);
   padding: 4px 16px 8px;
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
 }
 
 .filter-row {

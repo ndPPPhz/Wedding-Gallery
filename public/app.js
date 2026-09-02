@@ -330,6 +330,10 @@
 
   // Eventi UI
   function setMenuOpen(open) {
+    if (open) {
+      const topbar = document.querySelector('.topbar');
+      filtersPanel.style.top = `${topbar.getBoundingClientRect().bottom}px`;
+    }
     filtersPanel.hidden = !open;
     filtersOverlay.hidden = !open;
     menuToggle.setAttribute('aria-expanded', String(open));
