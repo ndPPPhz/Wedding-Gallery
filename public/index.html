@@ -30,10 +30,16 @@
 
 <header class="topbar">
   <h1 id="galleryTitle">Galleria</h1>
-  <button id="menuToggle" class="icon-btn menu-toggle" type="button" aria-expanded="false" aria-controls="filtersPanel">
-    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 6h18v2H3zM3 11h18v2H3zM3 16h18v2H3z"/></svg>
-    <span>Filtri</span>
-  </button>
+  <div class="topbar-actions">
+    <button id="menuToggle" class="icon-btn menu-toggle" type="button" aria-expanded="false" aria-controls="filtersPanel">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 6h18v2H3zM3 11h18v2H3zM3 16h18v2H3z"/></svg>
+      <span>Filtri</span>
+    </button>
+    <button id="moreToggle" class="icon-btn menu-toggle" type="button" aria-expanded="false" aria-controls="morePanel">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 8a2 2 0 100-4 2 2 0 000 4zM12 14a2 2 0 100-4 2 2 0 000 4zM12 20a2 2 0 100-4 2 2 0 000 4z"/></svg>
+      <span>Altro</span>
+    </button>
+  </div>
 </header>
 
 <div id="filtersPanel" class="filters-panel" hidden>
@@ -51,6 +57,12 @@
       <option value="likes">Più apprezzate</option>
     </select>
   </label>
+</div>
+
+<div id="morePanel" class="filters-panel" hidden>
+  <a href="https://forza4.anninoefederica.com" class="filter-row more-link">
+    <span>Sfida un invitato 🎲</span>
+  </a>
 </div>
 
 <div id="filtersOverlay" class="filters-overlay" hidden></div>
