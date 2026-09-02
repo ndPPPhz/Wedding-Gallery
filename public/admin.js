@@ -13,6 +13,9 @@
   const coverPreviewEmpty = document.getElementById('coverPreviewEmpty');
   const coverFileInput = document.getElementById('coverFileInput');
   const removeCoverBtn = document.getElementById('removeCoverBtn');
+  const downloadAllRow = document.getElementById('downloadAllRow');
+  const downloadAllBtn = document.getElementById('downloadAllBtn');
+  const downloadAllStatus = document.getElementById('downloadAllStatus');
 
   function formatBytes(bytes) {
     if (!bytes) return '0 KB';
@@ -27,6 +30,7 @@
   function showLogin(message) {
     loginBox.hidden = false;
     coverSection.hidden = true;
+    downloadAllRow.hidden = true;
     adminGrid.hidden = true;
     adminEmpty.hidden = true;
     loginError.hidden = !message;
@@ -36,6 +40,7 @@
   function showGrid() {
     loginBox.hidden = true;
     coverSection.hidden = false;
+    downloadAllRow.hidden = false;
     loadPhotos();
   }
 
@@ -175,6 +180,39 @@
   });
 
   removeCoverBtn.addEventListener('click', () => setCover(null, getPassword()));
+
+  downloadAllBtn.addEventListener('click', async () => {
+    const password = getPassword();
+    downloadAllBtn.disabled = true;
+    downloadAllStatus.textContent = 'Preparazione dello zip…';
+
+    try {
+      const res = await fetch('/api/admin/download-all', {
+        headers: { 'x-admin-password': password },
+      });
+
+      if (handleAuthFailure(res)) return;
+      if (!res.ok) {
+        let message = 'Errore durante la creazione dello zip.';
+        try { message = (await res.json()).error || message; } catch (e) { /* ignore */ }
+        alert(message);
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'foto-galleria.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      downloadAllBtn.disabled = false;
+      downloadAllStatus.textContent = '';
+    }
+  });
 
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();

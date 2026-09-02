@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const express = require('express');
 const multer = require('multer');
+const archiver = require('archiver');
 
 const db = require('./db');
 const { processUpload } = require('./imageProcessing');
@@ -203,6 +204,43 @@ app.post('/api/photos', upload.array('photos', MAX_FILES_PER_UPLOAD), async (req
 
 app.get('/api/admin/check', requireAdmin, (req, res) => {
   res.status(204).end();
+});
+
+function sanitizeFilename(raw) {
+  return String(raw || 'foto').replace(/[^\p{L}\p{N}_-]+/gu, '_').slice(0, 40) || 'foto';
+}
+
+app.get('/api/admin/download-all', requireAdmin, (req, res) => {
+  const rows = db.prepare('SELECT * FROM photos WHERE hidden = 0 ORDER BY created_at ASC').all();
+  if (rows.length === 0) {
+    return res.status(404).json({ error: 'Nessuna foto da scaricare.' });
+  }
+
+  res.attachment('foto-galleria.zip');
+
+  // Le foto sono già compresse in WebP: livello 0 (nessuna ricompressione)
+  // per non sprecare CPU sul server nel ricomprimere dati già compressi.
+  const archive = archiver('zip', { zlib: { level: 0 } });
+  archive.on('error', (err) => {
+    console.error('Errore durante la creazione dello zip:', err);
+    if (!res.headersSent) res.status(500).end();
+  });
+  archive.pipe(res);
+
+  const usedNames = new Set();
+  for (const row of rows) {
+    const base = `${sanitizeFilename(row.author)}_${row.created_at.slice(0, 10)}`;
+    let entryName = `${base}.webp`;
+    let n = 2;
+    while (usedNames.has(entryName)) {
+      entryName = `${base}_${n}.webp`;
+      n += 1;
+    }
+    usedNames.add(entryName);
+    archive.file(path.join(UPLOAD_DIR, row.full_file), { name: entryName });
+  }
+
+  archive.finalize();
 });
 
 function deletePhotoCompletely(id) {
