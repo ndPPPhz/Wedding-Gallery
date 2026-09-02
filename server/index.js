@@ -30,11 +30,11 @@ const upload = multer({
 });
 
 const insertPhoto = db.prepare(`
-  INSERT INTO photos (id, author, original_name, thumb_file, full_file, width, height, size_bytes, created_at)
-  VALUES (@id, @author, @originalName, @thumbFile, @fullFile, @width, @height, @sizeBytes, @createdAt)
+  INSERT INTO photos (id, author, original_name, thumb_file, full_file, width, height, size_bytes, created_at, guest_id)
+  VALUES (@id, @author, @originalName, @thumbFile, @fullFile, @width, @height, @sizeBytes, @createdAt, @guestId)
 `);
 
-function toPhotoJSON(row) {
+function toPhotoJSON(row, requesterGuestId) {
   return {
     id: row.id,
     author: row.author,
@@ -44,11 +44,20 @@ function toPhotoJSON(row) {
     height: row.height,
     sizeBytes: row.size_bytes,
     createdAt: row.created_at,
+    // L'id del dispositivo che ha caricato la foto non viene mai esposto:
+    // solo questo booleano, calcolato confrontandolo con quello del
+    // richiedente, così un altro invitato non può "rubarlo" dalla risposta
+    // pubblica e usarlo per eliminare foto altrui.
+    mine: Boolean(requesterGuestId && row.guest_id && row.guest_id === requesterGuestId),
   };
 }
 
 function sanitizeAuthor(raw) {
   return String(raw || '').trim().slice(0, 60);
+}
+
+function sanitizeGuestId(raw) {
+  return String(raw || '').trim().slice(0, 100);
 }
 
 const getSettingStmt = db.prepare('SELECT value FROM settings WHERE key = ?');
@@ -64,13 +73,18 @@ function getCoverPhoto() {
   return photo ? toPhotoJSON(photo) : null;
 }
 
+function isValidAdminPassword(provided) {
+  if (!ADMIN_PASSWORD || !provided) return false;
+  const providedBuf = Buffer.from(provided);
+  const expectedBuf = Buffer.from(ADMIN_PASSWORD);
+  return providedBuf.length === expectedBuf.length && crypto.timingSafeEqual(providedBuf, expectedBuf);
+}
+
 function requireAdmin(req, res, next) {
   if (!ADMIN_PASSWORD) {
     return res.status(503).json({ error: 'Zona admin non configurata: imposta ADMIN_PASSWORD nel .env.' });
   }
-  const provided = Buffer.from(req.get('x-admin-password') || '');
-  const expected = Buffer.from(ADMIN_PASSWORD);
-  if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
+  if (!isValidAdminPassword(req.get('x-admin-password'))) {
     return res.status(401).json({ error: 'Password non valida.' });
   }
   next();
@@ -90,16 +104,18 @@ app.get('/api/authors', (req, res) => {
 app.get('/api/photos', (req, res) => {
   const author = sanitizeAuthor(req.query.author);
   const order = req.query.sort === 'asc' ? 'ASC' : 'DESC';
+  const guestId = sanitizeGuestId(req.query.guestId);
 
   const rows = author
     ? db.prepare(`SELECT * FROM photos WHERE author = ? ORDER BY created_at ${order}, rowid ${order}`).all(author)
     : db.prepare(`SELECT * FROM photos ORDER BY created_at ${order}, rowid ${order}`).all();
 
-  res.json({ photos: rows.map(toPhotoJSON) });
+  res.json({ photos: rows.map((row) => toPhotoJSON(row, guestId)) });
 });
 
 app.post('/api/photos', upload.array('photos', MAX_FILES_PER_UPLOAD), async (req, res) => {
   const author = sanitizeAuthor(req.body.author);
+  const guestId = sanitizeGuestId(req.body.guestId);
   if (!author) {
     return res.status(400).json({ error: 'Il nome è obbligatorio.' });
   }
@@ -131,19 +147,24 @@ app.post('/api/photos', upload.array('photos', MAX_FILES_PER_UPLOAD), async (req
         height,
         sizeBytes,
         createdAt,
+        guestId: guestId || null,
       });
 
       results.push(
-        toPhotoJSON({
-          id,
-          author,
-          thumb_file: thumbFile,
-          full_file: fullFile,
-          width,
-          height,
-          size_bytes: sizeBytes,
-          created_at: createdAt,
-        }),
+        toPhotoJSON(
+          {
+            id,
+            author,
+            thumb_file: thumbFile,
+            full_file: fullFile,
+            width,
+            height,
+            size_bytes: sizeBytes,
+            created_at: createdAt,
+            guest_id: guestId || null,
+          },
+          guestId,
+        ),
       );
     } catch (err) {
       console.error(`Impossibile elaborare "${file.originalname}":`, err.message);
@@ -158,10 +179,18 @@ app.get('/api/admin/check', requireAdmin, (req, res) => {
   res.status(204).end();
 });
 
-app.delete('/api/photos/:id', requireAdmin, (req, res) => {
+app.delete('/api/photos/:id', (req, res) => {
   const row = db.prepare('SELECT * FROM photos WHERE id = ?').get(req.params.id);
   if (!row) {
     return res.status(404).json({ error: 'Foto non trovata.' });
+  }
+
+  const isAdmin = isValidAdminPassword(req.get('x-admin-password'));
+  const requestGuestId = sanitizeGuestId(req.get('x-guest-id'));
+  const isOwner = Boolean(row.guest_id) && requestGuestId === row.guest_id;
+
+  if (!isAdmin && !isOwner) {
+    return res.status(403).json({ error: 'Non puoi eliminare questa foto.' });
   }
 
   for (const file of [row.thumb_file, row.full_file]) {
