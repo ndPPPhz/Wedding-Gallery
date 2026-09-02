@@ -158,6 +158,8 @@ html, body {
   display: flex;
   flex-wrap: wrap;
   gap: var(--grid-gap);
+  padding-top: var(--grid-gap);
+  padding-bottom: var(--grid-gap);
 }
 
 .tile {
