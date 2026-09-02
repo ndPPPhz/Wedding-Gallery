@@ -37,9 +37,16 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_likes_photo ON likes(photo_id);
 `);
 
-const photoColumns = db.prepare('PRAGMA table_info(photos)').all().map((c) => c.name);
-if (!photoColumns.includes('guest_id')) {
-  db.exec('ALTER TABLE photos ADD COLUMN guest_id TEXT');
+function ensureColumn(name, definition) {
+  const columns = db.prepare('PRAGMA table_info(photos)').all().map((c) => c.name);
+  if (!columns.includes(name)) {
+    db.exec(`ALTER TABLE photos ADD COLUMN ${definition}`);
+  }
 }
+
+ensureColumn('guest_id', 'guest_id TEXT');
+// Foto caricate da /admin apposta come copertina, non collegate a nessun
+// invitato: non devono comparire nella galleria né nel filtro autori.
+ensureColumn('hidden', 'hidden INTEGER NOT NULL DEFAULT 0');
 
 module.exports = db;

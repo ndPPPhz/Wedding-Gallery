@@ -8,6 +8,11 @@
   const adminGrid = document.getElementById('adminGrid');
   const adminEmpty = document.getElementById('adminEmpty');
   const adminSummary = document.getElementById('adminSummary');
+  const coverSection = document.getElementById('coverSection');
+  const coverPreviewImg = document.getElementById('coverPreviewImg');
+  const coverPreviewEmpty = document.getElementById('coverPreviewEmpty');
+  const coverFileInput = document.getElementById('coverFileInput');
+  const removeCoverBtn = document.getElementById('removeCoverBtn');
 
   function formatBytes(bytes) {
     if (!bytes) return '0 KB';
@@ -21,6 +26,7 @@
 
   function showLogin(message) {
     loginBox.hidden = false;
+    coverSection.hidden = true;
     adminGrid.hidden = true;
     adminEmpty.hidden = true;
     loginError.hidden = !message;
@@ -29,7 +35,21 @@
 
   function showGrid() {
     loginBox.hidden = true;
+    coverSection.hidden = false;
     loadPhotos();
+  }
+
+  function renderCoverPreview(coverPhoto) {
+    if (coverPhoto) {
+      coverPreviewImg.src = coverPhoto.thumbUrl;
+      coverPreviewImg.hidden = false;
+      coverPreviewEmpty.hidden = true;
+      removeCoverBtn.hidden = false;
+    } else {
+      coverPreviewImg.hidden = true;
+      coverPreviewEmpty.hidden = false;
+      removeCoverBtn.hidden = true;
+    }
   }
 
   function renderGrid(photos, password, coverId) {
@@ -86,6 +106,7 @@
     const configData = await configRes.json();
     const coverId = configData.coverPhoto ? configData.coverPhoto.id : null;
     renderGrid(photosData.photos, password, coverId);
+    renderCoverPreview(configData.coverPhoto);
   }
 
   function handleAuthFailure(res) {
@@ -127,6 +148,33 @@
     }
     loadPhotos();
   }
+
+  coverFileInput.addEventListener('change', async () => {
+    const file = coverFileInput.files[0];
+    coverFileInput.value = '';
+    if (!file) return;
+
+    const password = getPassword();
+    const form = new FormData();
+    form.append('cover', file);
+
+    const res = await fetch('/api/admin/cover-upload', {
+      method: 'POST',
+      headers: { 'x-admin-password': password },
+      body: form,
+    });
+
+    if (handleAuthFailure(res)) return;
+    if (!res.ok) {
+      let message = 'Errore durante il caricamento della copertina.';
+      try { message = (await res.json()).error || message; } catch (e) { /* ignore */ }
+      alert(message);
+      return;
+    }
+    loadPhotos();
+  });
+
+  removeCoverBtn.addEventListener('click', () => setCover(null, getPassword()));
 
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();

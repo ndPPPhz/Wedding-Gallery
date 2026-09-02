@@ -30,8 +30,8 @@ const upload = multer({
 });
 
 const insertPhoto = db.prepare(`
-  INSERT INTO photos (id, author, original_name, thumb_file, full_file, width, height, size_bytes, created_at, guest_id)
-  VALUES (@id, @author, @originalName, @thumbFile, @fullFile, @width, @height, @sizeBytes, @createdAt, @guestId)
+  INSERT INTO photos (id, author, original_name, thumb_file, full_file, width, height, size_bytes, created_at, guest_id, hidden)
+  VALUES (@id, @author, @originalName, @thumbFile, @fullFile, @width, @height, @sizeBytes, @createdAt, @guestId, @hidden)
 `);
 
 function toPhotoJSON(row, requesterGuestId) {
@@ -98,7 +98,9 @@ app.get('/api/config', (req, res) => {
 
 app.get('/api/authors', (req, res) => {
   const rows = db
-    .prepare('SELECT author, COUNT(*) as count FROM photos GROUP BY author ORDER BY author COLLATE NOCASE')
+    .prepare(
+      'SELECT author, COUNT(*) as count FROM photos WHERE hidden = 0 GROUP BY author ORDER BY author COLLATE NOCASE',
+    )
     .all();
   res.json({ authors: rows });
 });
@@ -115,9 +117,9 @@ app.get('/api/photos', (req, res) => {
         : 'p.created_at DESC, p.rowid DESC';
 
   const params = [guestId];
-  let where = '';
+  let where = 'WHERE p.hidden = 0';
   if (author) {
-    where = 'WHERE p.author = ?';
+    where += ' AND p.author = ?';
     params.push(author);
   }
 
@@ -171,6 +173,7 @@ app.post('/api/photos', upload.array('photos', MAX_FILES_PER_UPLOAD), async (req
         sizeBytes,
         createdAt,
         guestId: guestId || null,
+        hidden: 0,
       });
 
       results.push(
@@ -202,6 +205,22 @@ app.get('/api/admin/check', requireAdmin, (req, res) => {
   res.status(204).end();
 });
 
+function deletePhotoCompletely(id) {
+  const row = db.prepare('SELECT * FROM photos WHERE id = ?').get(id);
+  if (!row) return;
+
+  for (const file of [row.thumb_file, row.full_file]) {
+    fs.rmSync(path.join(UPLOAD_DIR, file), { force: true });
+  }
+  db.prepare('DELETE FROM photos WHERE id = ?').run(id);
+  db.prepare('DELETE FROM likes WHERE photo_id = ?').run(id);
+
+  const coverRow = getSettingStmt.get('cover_photo_id');
+  if (coverRow && coverRow.value === id) {
+    deleteSettingStmt.run('cover_photo_id');
+  }
+}
+
 app.delete('/api/photos/:id', (req, res) => {
   const row = db.prepare('SELECT * FROM photos WHERE id = ?').get(req.params.id);
   if (!row) {
@@ -216,16 +235,7 @@ app.delete('/api/photos/:id', (req, res) => {
     return res.status(403).json({ error: 'Non puoi eliminare questa foto.' });
   }
 
-  for (const file of [row.thumb_file, row.full_file]) {
-    fs.rmSync(path.join(UPLOAD_DIR, file), { force: true });
-  }
-  db.prepare('DELETE FROM photos WHERE id = ?').run(req.params.id);
-  db.prepare('DELETE FROM likes WHERE photo_id = ?').run(req.params.id);
-
-  const coverRow = getSettingStmt.get('cover_photo_id');
-  if (coverRow && coverRow.value === req.params.id) {
-    deleteSettingStmt.run('cover_photo_id');
-  }
+  deletePhotoCompletely(req.params.id);
 
   res.status(204).end();
 });
@@ -264,9 +274,19 @@ app.delete('/api/photos/:id/like', (req, res) => {
   res.json({ likeCount: likeCountFor(req.params.id), likedByMe: false });
 });
 
+function clearPreviousHiddenCover() {
+  const coverRow = getSettingStmt.get('cover_photo_id');
+  if (!coverRow) return;
+  const photo = db.prepare('SELECT id, hidden FROM photos WHERE id = ?').get(coverRow.value);
+  if (photo && photo.hidden) {
+    deletePhotoCompletely(photo.id);
+  }
+}
+
 app.post('/api/admin/cover', requireAdmin, (req, res) => {
   const photoId = req.body && req.body.photoId;
   if (!photoId) {
+    clearPreviousHiddenCover();
     deleteSettingStmt.run('cover_photo_id');
     return res.status(204).end();
   }
@@ -276,8 +296,51 @@ app.post('/api/admin/cover', requireAdmin, (req, res) => {
     return res.status(404).json({ error: 'Foto non trovata.' });
   }
 
+  clearPreviousHiddenCover();
   setSettingStmt.run('cover_photo_id', photoId);
   res.status(204).end();
+});
+
+// Foto di copertina caricata apposta dall'admin (non presa dalla galleria):
+// salvata come una normale foto compressa ma con hidden=1, quindi esclusa
+// da /api/photos e /api/authors — esiste solo per l'hero.
+app.post('/api/admin/cover-upload', requireAdmin, upload.single('cover'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'Nessuna immagine ricevuta.' });
+  }
+
+  try {
+    const id = crypto.randomUUID();
+    const { thumbFile, fullFile, width, height, sizeBytes } = await processUpload(
+      req.file.buffer,
+      req.file.originalname,
+      UPLOAD_DIR,
+      id,
+    );
+    const createdAt = new Date().toISOString();
+
+    insertPhoto.run({
+      id,
+      author: 'Copertina',
+      originalName: req.file.originalname,
+      thumbFile,
+      fullFile,
+      width,
+      height,
+      sizeBytes,
+      createdAt,
+      guestId: null,
+      hidden: 1,
+    });
+
+    clearPreviousHiddenCover();
+    setSettingStmt.run('cover_photo_id', id);
+
+    res.status(201).json({ coverPhoto: getCoverPhoto() });
+  } catch (err) {
+    console.error('Impossibile elaborare la foto di copertina:', err.message);
+    res.status(422).json({ error: 'Impossibile elaborare questa immagine.' });
+  }
 });
 
 app.get('/admin', (req, res) => {
