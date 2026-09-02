@@ -49,6 +49,8 @@ function toPhotoJSON(row, requesterGuestId) {
     // richiedente, così un altro invitato non può "rubarlo" dalla risposta
     // pubblica e usarlo per eliminare foto altrui.
     mine: Boolean(requesterGuestId && row.guest_id && row.guest_id === requesterGuestId),
+    likeCount: row.like_count || 0,
+    likedByMe: Boolean(row.liked_by_me),
   };
 }
 
@@ -103,12 +105,33 @@ app.get('/api/authors', (req, res) => {
 
 app.get('/api/photos', (req, res) => {
   const author = sanitizeAuthor(req.query.author);
-  const order = req.query.sort === 'asc' ? 'ASC' : 'DESC';
   const guestId = sanitizeGuestId(req.query.guestId);
 
-  const rows = author
-    ? db.prepare(`SELECT * FROM photos WHERE author = ? ORDER BY created_at ${order}, rowid ${order}`).all(author)
-    : db.prepare(`SELECT * FROM photos ORDER BY created_at ${order}, rowid ${order}`).all();
+  const orderBy =
+    req.query.sort === 'likes'
+      ? 'like_count DESC, p.created_at DESC, p.rowid DESC'
+      : req.query.sort === 'asc'
+        ? 'p.created_at ASC, p.rowid ASC'
+        : 'p.created_at DESC, p.rowid DESC';
+
+  const params = [guestId];
+  let where = '';
+  if (author) {
+    where = 'WHERE p.author = ?';
+    params.push(author);
+  }
+
+  const rows = db
+    .prepare(
+      `SELECT p.*, COUNT(l.guest_id) AS like_count,
+              MAX(CASE WHEN l.guest_id = ? THEN 1 ELSE 0 END) AS liked_by_me
+       FROM photos p
+       LEFT JOIN likes l ON l.photo_id = p.id
+       ${where}
+       GROUP BY p.id
+       ORDER BY ${orderBy}`,
+    )
+    .all(...params);
 
   res.json({ photos: rows.map((row) => toPhotoJSON(row, guestId)) });
 });
@@ -197,6 +220,7 @@ app.delete('/api/photos/:id', (req, res) => {
     fs.rmSync(path.join(UPLOAD_DIR, file), { force: true });
   }
   db.prepare('DELETE FROM photos WHERE id = ?').run(req.params.id);
+  db.prepare('DELETE FROM likes WHERE photo_id = ?').run(req.params.id);
 
   const coverRow = getSettingStmt.get('cover_photo_id');
   if (coverRow && coverRow.value === req.params.id) {
@@ -204,6 +228,40 @@ app.delete('/api/photos/:id', (req, res) => {
   }
 
   res.status(204).end();
+});
+
+function likeCountFor(photoId) {
+  return db.prepare('SELECT COUNT(*) AS c FROM likes WHERE photo_id = ?').get(photoId).c;
+}
+
+app.post('/api/photos/:id/like', (req, res) => {
+  const guestId = sanitizeGuestId(req.get('x-guest-id'));
+  if (!guestId) {
+    return res.status(400).json({ error: 'guestId mancante.' });
+  }
+  const photo = db.prepare('SELECT id FROM photos WHERE id = ?').get(req.params.id);
+  if (!photo) {
+    return res.status(404).json({ error: 'Foto non trovata.' });
+  }
+
+  db.prepare('INSERT OR IGNORE INTO likes (photo_id, guest_id, created_at) VALUES (?, ?, ?)').run(
+    req.params.id,
+    guestId,
+    new Date().toISOString(),
+  );
+
+  res.json({ likeCount: likeCountFor(req.params.id), likedByMe: true });
+});
+
+app.delete('/api/photos/:id/like', (req, res) => {
+  const guestId = sanitizeGuestId(req.get('x-guest-id'));
+  if (!guestId) {
+    return res.status(400).json({ error: 'guestId mancante.' });
+  }
+
+  db.prepare('DELETE FROM likes WHERE photo_id = ? AND guest_id = ?').run(req.params.id, guestId);
+
+  res.json({ likeCount: likeCountFor(req.params.id), likedByMe: false });
 });
 
 app.post('/api/admin/cover', requireAdmin, (req, res) => {
