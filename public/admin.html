@@ -21,6 +21,22 @@
   <p id="loginError" class="admin-error" hidden></p>
 </div>
 
+<section id="coverSection" class="cover-section" hidden>
+  <h2>Foto di copertina (hero)</h2>
+  <div id="coverPreviewBox" class="cover-preview-box">
+    <img id="coverPreviewImg" alt="Copertina attuale" hidden />
+    <span id="coverPreviewEmpty">Nessuna copertina impostata</span>
+  </div>
+  <div class="cover-actions">
+    <label class="cover-upload-btn">
+      Carica una foto come copertina
+      <input id="coverFileInput" type="file" accept="image/*,.heic,.heif" hidden />
+    </label>
+    <button id="removeCoverBtn" type="button" class="cover-remove-btn" hidden>Rimuovi copertina</button>
+  </div>
+  <p class="cover-hint">Non deve per forza essere una foto già presente nella galleria — puoi caricarne una nuova dal cellulare. Per usare invece una foto già caricata da un invitato, trovi il pulsante "Imposta come copertina" sotto ogni foto qui sotto.</p>
+</section>
+
 <p id="adminSummary" class="admin-summary" hidden></p>
 <main id="adminGrid" class="admin-grid" hidden></main>
 <p id="adminEmpty" class="empty-state" hidden>Nessuna foto caricata.</p>
