@@ -51,6 +51,12 @@ html, body {
   text-overflow: ellipsis;
 }
 
+.topbar-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 #authorFilter,
 #sortSelect {
   border: 1px solid var(--border);
@@ -121,6 +127,17 @@ html, body {
 .filter-label {
   font-size: 0.9rem;
   color: var(--muted);
+}
+
+.more-link {
+  justify-content: flex-start;
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.more-link:active {
+  background: var(--border);
 }
 
 .hero {

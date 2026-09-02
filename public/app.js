@@ -17,6 +17,8 @@
   const heroTitle = document.getElementById('heroTitle');
   const menuToggle = document.getElementById('menuToggle');
   const filtersPanel = document.getElementById('filtersPanel');
+  const moreToggle = document.getElementById('moreToggle');
+  const morePanel = document.getElementById('morePanel');
   const filtersOverlay = document.getElementById('filtersOverlay');
   const authorFilter = document.getElementById('authorFilter');
   const sortSelect = document.getElementById('sortSelect');
@@ -329,21 +331,35 @@
   }
 
   // Eventi UI
-  function setMenuOpen(open) {
-    if (open) {
-      const topbar = document.querySelector('.topbar');
-      filtersPanel.style.top = `${topbar.getBoundingClientRect().bottom}px`;
+  const panelToggles = [
+    { panel: filtersPanel, toggle: menuToggle },
+    { panel: morePanel, toggle: moreToggle },
+  ];
+
+  function closeAllPanels() {
+    for (const { panel, toggle } of panelToggles) {
+      panel.hidden = true;
+      toggle.setAttribute('aria-expanded', 'false');
     }
-    filtersPanel.hidden = !open;
-    filtersOverlay.hidden = !open;
-    menuToggle.setAttribute('aria-expanded', String(open));
+    filtersOverlay.hidden = true;
   }
 
-  menuToggle.addEventListener('click', () => {
-    setMenuOpen(filtersPanel.hidden);
-  });
+  function togglePanel(panel, toggle) {
+    const isOpening = panel.hidden;
+    closeAllPanels();
+    if (!isOpening) return;
 
-  filtersOverlay.addEventListener('click', () => setMenuOpen(false));
+    const topbar = document.querySelector('.topbar');
+    panel.style.top = `${topbar.getBoundingClientRect().bottom}px`;
+    panel.hidden = false;
+    filtersOverlay.hidden = false;
+    toggle.setAttribute('aria-expanded', 'true');
+  }
+
+  menuToggle.addEventListener('click', () => togglePanel(filtersPanel, menuToggle));
+  moreToggle.addEventListener('click', () => togglePanel(morePanel, moreToggle));
+
+  filtersOverlay.addEventListener('click', closeAllPanels);
 
   authorFilter.addEventListener('change', () => {
     state.author = authorFilter.value;
@@ -384,7 +400,7 @@
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !filtersPanel.hidden) setMenuOpen(false);
+    if (e.key === 'Escape' && (!filtersPanel.hidden || !morePanel.hidden)) closeAllPanels();
     if (!lightbox.classList.contains('open')) return;
     if (e.key === 'Escape') closeLightbox();
     if (e.key === 'ArrowLeft') stepLightbox(-1);
