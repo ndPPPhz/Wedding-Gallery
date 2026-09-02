@@ -358,6 +358,7 @@ html, body {
   height: 64px;
   cursor: pointer;
   border-radius: 6px;
+  z-index: 61;
 }
 
 .lightbox-prev { left: 10px; }
