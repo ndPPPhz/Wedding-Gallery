@@ -284,6 +284,32 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin.html'));
 });
 
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[c]);
+}
+
+const indexHtmlPath = path.join(__dirname, '..', 'public', 'index.html');
+
+app.get('/', (req, res) => {
+  const html = fs.readFileSync(indexHtmlPath, 'utf8');
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const cover = getCoverPhoto();
+
+  const ogTitle = GALLERY_TITLE;
+  const ogDescription = `${GALLERY_TITLE} — carica e guarda le foto del matrimonio`;
+  const ogImage = `${baseUrl}${cover ? cover.fullUrl : '/og-image.png'}`;
+
+  const rendered = html
+    .replaceAll('__OG_TITLE__', escapeHtml(ogTitle))
+    .replaceAll('__OG_DESCRIPTION__', escapeHtml(ogDescription))
+    .replaceAll('__OG_IMAGE__', ogImage)
+    .replaceAll('__OG_URL__', `${baseUrl}/`);
+
+  res.type('html').send(rendered);
+});
+
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '30d', immutable: true }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
