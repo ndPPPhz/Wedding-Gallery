@@ -40,7 +40,7 @@ Apri `http://localhost:3000`.
 | `UPLOAD_DIR`           | Cartella dove salvare le foto compresse           | `./data/uploads`      |
 | `DB_PATH`              | Percorso del database SQLite                      | `./data/gallery.db`   |
 | `MAX_FILE_MB`          | Dimensione massima per singola foto originale     | `100`                 |
-| `MAX_FILES_PER_UPLOAD` | Numero massimo di foto per singolo upload         | `20`                  |
+| `MAX_FILES_PER_UPLOAD` | Numero massimo di foto per singolo upload         | `50`                  |
 | `GALLERY_TITLE`        | Titolo mostrato in alto nella pagina              | `Il Nostro Matrimonio`|
 | `ADMIN_PASSWORD`       | Password per `/admin`. Vuota = zona admin disabilitata | _(vuota)_        |
 
