@@ -32,6 +32,7 @@
 
   const lightbox = document.getElementById('lightbox');
   const lightboxImg = document.getElementById('lightboxImg');
+  const lightboxSpinner = document.getElementById('lightboxSpinner');
   const lightboxAuthor = document.getElementById('lightboxAuthor');
   const lightboxDate = document.getElementById('lightboxDate');
   const lightboxDownload = document.getElementById('lightboxDownload');
@@ -187,10 +188,30 @@
     lightbox.classList.add('open');
   }
 
+  function setLightboxLoading(loading) {
+    lightboxSpinner.hidden = !loading;
+    lightboxImg.classList.toggle('loading', loading);
+  }
+
   function showLightboxPhoto() {
     const photo = state.photos[state.lightboxIndex];
     if (!photo) return;
-    lightboxImg.src = photo.fullUrl;
+
+    lightboxImg.onload = () => setLightboxLoading(false);
+    lightboxImg.onerror = () => setLightboxLoading(false);
+
+    // Cambiando foto, l'<img> continua a mostrare quella precedente finché
+    // la nuova non ha finito di scaricare: su connessioni lente sembra
+    // bloccata sulla foto sbagliata. Sfumiamo quella vecchia e mostriamo
+    // uno spinner mentre la nuova carica, a meno che non sia già la stessa
+    // immagine già visualizzata (evita di far ripartire lo spinner a vuoto,
+    // dato che in quel caso il browser non genera un nuovo evento di caricamento).
+    const resolvedUrl = new URL(photo.fullUrl, window.location.href).href;
+    if (lightboxImg.src !== resolvedUrl) {
+      setLightboxLoading(true);
+      lightboxImg.src = photo.fullUrl;
+    }
+
     lightboxImg.alt = `Foto di ${photo.author}`;
     lightboxAuthor.textContent = photo.author;
     lightboxDate.textContent = formatDate(photo.createdAt);
